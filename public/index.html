@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear mapas interactivos en aplicaciones web</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Aplicación con la biblioteca de Javascript (Leaflet) y OpenStreetMap</h1>
+ 
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+ 
+    <script>
+            const map = L.map('map').setView([19.4326, -99.1332], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+ 
+            // Obtener la ubicación actual del usuario
+       
+            if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const usuario = [position.coords.latitude, position.coords.longitude];
+                map.setView(usuario, 14);
+ 
+                // Agregar un marcador en la ubicación del usuario
+                const usuariomarcador = L.marker(usuario).addTo(map)
+                    .bindPopup('En este momento te encuentras aquí').openPopup();
+            }, () => {
+                alert('No se puede obtener la ubicación');
+            });
+        } else {
+            alert('Geolocalización no soportada por este navegador.');
+        }
+ 
+        let marcadores = [];
+        let control_rutas = null; // Variable para almacenar el control de rutas
+ 
+        // Escuchar clics en el mapa para agregar marcadores
+        map.on('click', (event) => {
+            if (marcadores.length < 2) {
+                const marcador = L.marker([event.latlng.lat, event.latlng.lng]).addTo(map);
+                marcadores.push(marcador); // Agregar marcador al array
+                if (marcadores.length===2){
+                    calcular_ruta();
+                }
+                } else {
+                alert('Ya se han agregado dos marcadores. No se pueden agregar más.');
+            }
+        });
+ 
+        function calcular_ruta(){
+                const inicio=marcadores[0].getLatLng();
+                const fin=marcadores[1].getLatLng();
+ 
+                control_rutas = L.Routing.control({
+                    waypoints: [
+                        L.latLng(inicio.lat, inicio.lng),
+                        L.latLng(fin.lat, fin.lng)
+                ],
+                routeWhileDragging: true
+            }).addTo(map);
+       
+ 
+        setTimeout(() => {
+            const nueva_ruta = confirm('¿Deseas generar una nueva ruta?');
+            if (nueva_ruta){
+                resetear_Map();
+            }
+         }, 1000);
+        }
+         
+         function resetear_Map(){
+            marcadores.forEach(marker=>map.removeLayer(marker));
+            marcadores = [];
+            if (control_rutas){
+                map.removeControl(control_rutas);
+            }
+         }
+    </script>
+</body>
+</html>
